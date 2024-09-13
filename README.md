@@ -13,7 +13,7 @@ Automate the creation and updating of Microsoft Fabric environments with custom 
 
 - File: `fabric_env_automation.py`
 - [Usage Guide](docs/fabric_env_automation_guide.md)
-- [Medium Article](https://medium.com/your-article-link)
+- [Medium Article](https://medium.com/@diioula.doucoure/automating-microsoft-fabric-environment-creation-with-custom-python-packages-from-azure-devops-e14702f4c802)
 
 ### Key Features:
 - Create or update Microsoft Fabric environments
