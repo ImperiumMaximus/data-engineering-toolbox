@@ -65,10 +65,18 @@ class UploadPackageToEnvironment:
         existing_library = self.get_existing_library(workspace_id, environment_id)
         if existing_library is not None:
             print(f"Found older version of package {existing_library}. Deleting it to avoid errors during publishing.")
-            if self.delete_existing_library(workspace_id, environment_id, existing_library):
-                print(f"Older package {existing_library} deleted successfully.")
-            else:
+            if not self.delete_existing_library(workspace_id, environment_id, existing_library):
+                print(f"Failed to delete older package {existing_library}")
                 return
+            if not self.publish_environment(workspace_id, environment_id):
+                print(f"Failed to publish environment after older library deletion")
+                return
+            if not self.wait_for_publish_completion(workspace_id, environment_id):
+                print(f"Failed to publish environment after older library deletion")
+                return 
+            
+            print(f"Older package {existing_library} deleted successfully.")
+            time.sleep(5)
          
         filename = (
             self.download_package_from_azure_devops(
@@ -163,7 +171,7 @@ class UploadPackageToEnvironment:
             return
 
     def download_package_from_azure_devops(
-        self, token, package_name, package_version
+        self, token, package_name, package_version=None
     ):
         """
         Function to get download .whl file from Azure Artifact Feed
@@ -177,7 +185,7 @@ class UploadPackageToEnvironment:
         auth = HTTPBasicAuth("", token)
         response = requests.get(package_url, auth=auth)
         soup = BeautifulSoup(response.text, "html.parser")
-        download_url = [a for a in soup.find_all("a", href=True) if a.text.startswith(f"{package_name}-{package_version}")][0]["href"]
+        download_url = [a for a in soup.find_all("a", href=True) if a.text.startswith(f"{package_name}-{package_version}" if package_version is not None else f"{package_name}")][0]["href"]
         filename = self.get_package_whl(download_url, auth=auth, is_devops=True)
         return filename
 
@@ -226,7 +234,6 @@ class UploadPackageToEnvironment:
                 if environment['displayName'] == display_name:
                     return environment['id']
         except FabricRESTException as e:
-            print(e.response.status_code)
             return None
 
     def get_environment_metadata(self, workspace_id, environment_id):
